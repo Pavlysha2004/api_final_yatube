@@ -30,7 +30,14 @@ class FollowViewSet(mixins.ListModelMixin,
         user = self.request.user
         following = serializer.validated_data['following']
         if user == following:
-            raise ValidationError("Нельзя подписаться на самого себя.")
+            raise ValidationError(
+                {"detail": "Нельзя подписаться на самого себя."}
+            )
+
+        if Follow.objects.filter(user=user, following=following).exists():
+            raise ValidationError(
+                {"detail": "Вы уже подписаны на этого пользователя."}
+            )
         serializer.save(user=user)
 
 
@@ -66,7 +73,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         post = get_object_or_404(Post, pk=self.kwargs['post_id'])
-        return post.comments.order_by('-created')
+        return post.comments.order_by('created')
 
     def get_permissions(self):
         if self.action == 'retrieve':
